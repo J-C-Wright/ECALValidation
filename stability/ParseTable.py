@@ -93,6 +93,7 @@ def parse_table_over_regions(path = "", tableFile = "",category="",xVar=""):
     lines = []
     varmins = []
     varmaxes = []
+    varmids = []
 
     text = open(path+tableFile).read()
     text = re.sub('\\pm','~',text)
@@ -114,11 +115,14 @@ def parse_table_over_regions(path = "", tableFile = "",category="",xVar=""):
                 lines.append(line)
                 varmins.append(float(re.findall(r"[-+]?\d*\.\d+|\d+",line.split('&')[0])[0]))
                 varmaxes.append(float(re.findall(r"[-+]?\d*\.\d+|\d+",line.split('&')[0])[1]))
+                varmids.append((float(re.findall(r"[-+]?\d*\.\d+|\d+",line.split('&')[0])[1]) 
+                                + float(re.findall(r"[-+]?\d*\.\d+|\d+",line.split('&')[0])[0]))/2.0)
         else:
             if category in line.split('&')[0]:
                 lines.append(line)
                 varmins.append(float(re.findall(r"[-+]?\d*\.\d+|\d+",line.split('&')[0])[0]))
                 varmaxes.append(float(re.findall(r"[-+]?\d*\.\d+|\d+",line.split('&')[0])[1]))
+                varmids.append((float(re.findall(r"[-+]?\d*\.\d+|\d+",line.split('&')[0])[1]) + float(re.findall(r"[-+]?\d*\.\d+|\d+",line.split('&')[0])[0]))/2.0)
 
     #If there's nothing for this category, return an empty dataframe
     if len(lines) == 0: return pd.DataFrame()
@@ -126,10 +130,11 @@ def parse_table_over_regions(path = "", tableFile = "",category="",xVar=""):
     data = pd.DataFrame()
     data[xVar + '_min'] = varmins
     data[xVar + '_max'] = varmaxes
+    data[xVar + '_mid'] = varmids
 
-    variables = [xVar+'min',xVar+'max'] + variables[2:]
+    variables = [xVar+'min',xVar+'max',xVar+'mid'] + variables[2:]
 
-    for i in range(2,len(variables),1):
+    for i in range(3,len(variables),1):
         values = []
         errors = []
         for line in lines:

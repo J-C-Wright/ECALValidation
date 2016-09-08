@@ -113,7 +113,7 @@ if __name__ == '__main__':
         #Get variables to make plots of (data, not mc or err vars)
         variables = []
         if opt.xVar != '':
-            xVars = [opt.xVar+'_min',opt.xVar+'_max']
+            xVars = [opt.xVar+'_min',opt.xVar+'_max',opt.xVar+'_mid']
         else:
             xVars = ['Nevents'     ,
                         'UnixTime'    ,
@@ -156,8 +156,9 @@ if __name__ == '__main__':
                                            category = region, path=plot_path, evenX = evenX,
                                            xVar=opt.xVar)
             else:
-                xvars = [opt.xVar+'_min',opt.xVar+'_max']
+                xvars = [opt.xVar+'_min',opt.xVar+'_max',opt.xVar+'_mid']
                 for xvar in xvars:
+                    print 'xVar: ' + xvar
                     pt.plot_stability( xData = d[xvar], datavalues = d[var],
                                        dataerrors = d[var+'_err'], mcvalues = mcvalues,
                                        mcerrors = mcerrors, label = pt.var_labels[var],
