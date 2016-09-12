@@ -80,6 +80,19 @@ def read_regions_from_regionsfile(path = "",regionsFile=""):
 
     return regions
 
+def get_tables_from_config(path = '',config = ''):
+
+    tables = []
+    runRanges = []
+    names = []
+    with open(path+config) as f:
+        for line in f.read().split('\n'):
+            if line != '' and line[0] != '#':
+                tables.append(line.split()[0])
+                runRanges.append(line.split()[1])
+                names.append(line.split()[2])
+
+    return [names,runRanges,tables]
 
 def parse_table_over_regions(path = "", tableFile = "",category="",xVar=""):
 
@@ -229,7 +242,9 @@ def append_variables(path='',file='',data=None,category=''):
     return data_
 
 
-def plot_stability( xData = None, datavalues = None, mcvalues = None, dataerrors = None, mcerrors = None, label = '', category = '', path = "", evenX = False, xVar = ''):
+def plot_stability( xData = None, data_datasets = None, mc_datasets = None, data_errorsets = None, 
+                    mc_errorsets = None, label = '', category = '', path = "", evenX = False, 
+                    xVar = '',showMC = False,names = None):
 
     left, width = 0.1, 1.0
     bottom, height = 0.1, 0.5
@@ -246,10 +261,12 @@ def plot_stability( xData = None, datavalues = None, mcvalues = None, dataerrors
     ax_hist.yaxis.set_major_formatter(nullfmt)
 
     xPlaceholder = range(1,1+len(xData),1)
-    if evenX:
-        ax_plot.errorbar(xPlaceholder,datavalues,yerr=dataerrors,capthick=0,marker='o',ms=4,ls='None',)
-    else:
-        ax_plot.errorbar(xData,datavalues,yerr=dataerrors,capthick=0,marker='o',ms=4,ls='None',)
+ 
+    for data_dataset,data_errorset in zip(data_datasets,data_errorsets):
+        if evenX:
+            ax_plot.errorbar(xPlaceholder,data_dataset,yerr=data_errorset,capthick=0,marker='o',ms=4,ls='None',)
+        else:
+            ax_plot.errorbar(xData,data_dataset,yerr=data_errorset,capthick=0,marker='o',ms=4,ls='None',)
 
     # customise the axes
     xDataVar = xData.name
@@ -292,57 +309,70 @@ def plot_stability( xData = None, datavalues = None, mcvalues = None, dataerrors
 
     #Get and set the limits for the histogram
 
-    if (len(mcvalues) > 0):
-        ymin = round(min(datavalues.min(),mcvalues.min())) - 1
-        ymax = round(max(datavalues.max(),mcvalues.max())) + 1
-    else:
-        ymin = round(datavalues.min()) - 1
-        ymax = round(datavalues.max()) + 1
+    for data_dataset,mc_dataset in zip(data_datasets,mc_datasets):
+        if (len(mc_dataset) > 0):
+            ymin = round(min(data_dataset.min(),mc_dataset.min())) - 1
+            ymax = round(max(data_dataset.max(),mc_dataset.max())) + 1
+        else:
+            ymin = round(data_dataset.min()) - 1
+            ymax = round(data_dataset.max()) + 1
 
     ax_plot.set_ylim((ymin,ymax))
     ax_hist.set_ylim((ymin,ymax))
 
     ax_plot.set_ylabel(label)
 
-    nbin = 20
-    y,_,_ = ax_hist.hist(datavalues, bins=nbin, orientation='horizontal', histtype='stepfilled', alpha=0.6)
-    hmax = y.max()
+    nbin = 50
+
+    hmaxes = []
+    for data_dataset in data_datasets:
+        y,_,_ = ax_hist.hist(data_dataset, bins=nbin, range = [ymin,ymax],orientation='horizontal', histtype='stepfilled', alpha=0.6)
+        hmaxes.append(y.max())
+    hmax = max(hmaxes)
     ax_hist.set_xlim((0,hmax*1.1))
 
     ax_plot.set_title(region_labels[category] + "    " + label)
 
     #Annotate with mean and std dev
-    npVals = np.asarray(datavalues)
-    ax_hist.annotate('Mean = {:3.3f}'.format(np.mean(npVals)),(hmax/6,ymin-(ymax-ymin)*0.1),fontsize=11,annotation_clip=False,xycoords='data')
-    ax_hist.annotate('Std dev. = {:3.3f}'.format(np.std(npVals)),(hmax/6,ymin-(ymax-ymin)*0.175),fontsize=11,annotation_clip=False,xycoords='data')
+#    npVals = np.asarray(data_datasets)
+#    ax_hist.annotate('Mean = {:3.3f}'.format(np.mean(npVals)),(hmax/6,ymin-(ymax-ymin)*0.1),fontsize=11,annotation_clip=False,xycoords='data')
+#    ax_hist.annotate('Std dev. = {:3.3f}'.format(np.std(npVals)),(hmax/6,ymin-(ymax-ymin)*0.175),fontsize=11,annotation_clip=False,xycoords='data')
     
     #Add line for the MC 
-    if (len(mcvalues) > 0):
+#    for mc_dataset,mc_errorset in zip(mc_datasets,mc_errorsets):
+    
+    mc_dataset = mc_datasets[0]
+    mc_errorset = mc_errorsets[0]
+
+    if (len(mc_dataset) > 0):
         if evenX:
-            ax_plot.errorbar(xPlaceholder,mcvalues,yerr=mcerrors,capthick=0,marker='o',ms=4,ls='None',c='Red')
+            ax_plot.errorbar(xPlaceholder,mc_dataset,yerr=mc_errorset,capthick=0,marker='o',ms=4,ls='None',c='Red')
         else:
-            ax_plot.errorbar(xData,mcvalues,yerr=mcerrors,capthick=0,marker='o',ms=4,ls='None',c='Red')
+            ax_plot.errorbar(xData,mc_dataset,yerr=mc_errorset,capthick=0,marker='o',ms=4,ls='None',c='Red')
 
         if evenX:
             xNP = np.asarray(xPlaceholder)
         else:
             xNP = np.asarray(xData.tolist())
 
-        mcNP = np.asarray(mcvalues.tolist())
-        mcErrNP = np.asarray(mcerrors.tolist())
+        mcNP = np.asarray(mc_dataset.tolist())
+        mcErrNP = np.asarray(mc_errorset.tolist())
 
         ax_plot.fill_between(xNP,mcNP-mcErrNP,mcNP+mcErrNP,alpha=0.3,edgecolor='red', facecolor='red')
 
-        if xVar == '':
-            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mcvalues[1],mcerrors[1]),(hmax/6,ymin-(ymax-ymin)*0.25),fontsize=11,annotation_clip=False,xycoords='data')
+#        if xVar == '':
+#            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mc_datasets[1],mc_errorsets[1]),(hmax/6,ymin-(ymax-ymin)*0.25),fontsize=11,annotation_clip=False,xycoords='data')
         
     #Legend
-    legend = ax_plot.legend(loc='lower center',numpoints=1)
-    if (len(mcvalues) > 0):
-        legend.get_texts()[0].set_text('Data')
-        legend.get_texts()[1].set_text('MC')
+    legend = ax_plot.legend(loc='lower left',numpoints=1,prop={'size':9})
+    if (len(mc_datasets[0]) > 0):
+        for i,name in enumerate(names):
+            legend.get_texts()[i].set_text(name)
+        legend.get_texts()[len(names)].set_text('MC')
     else:
-        legend.get_texts()[0].set_text('Data')
+        for i,name in enumerate(names):
+            legend.get_texts()[i].set_text(name)
+    legend.get_frame().set_alpha(0.6)
     
     #Save
     if evenX:
@@ -355,7 +385,6 @@ def plot_stability( xData = None, datavalues = None, mcvalues = None, dataerrors
     fileName = re.sub(r'[ ]','_',fileName)
 
     for fType in format_fig_output:
-
         print 'Saving plot: ' + path + xDataVar + '/' + fileName + '.' + fType
         plt.savefig( path + xDataVar + '/' + fileName+'.'+fType,
                      format=fType,orientation='landscape',
