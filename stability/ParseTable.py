@@ -377,16 +377,16 @@ def plot_stability( xData = None, xData_err=None,
     ax_plot.set_title(region_labels[category] + "    " + label)
 
     #Annotate with mean and std dev
-#    npVals = np.asarray(data_datasets)
-#    ax_hist.annotate('Mean = {:3.3f}'.format(np.mean(npVals)),(hmax/6,ymin-(ymax-ymin)*0.1),fontsize=11,annotation_clip=False,xycoords='data')
-#    ax_hist.annotate('Std dev. = {:3.3f}'.format(np.std(npVals)),(hmax/6,ymin-(ymax-ymin)*0.175),fontsize=11,annotation_clip=False,xycoords='data')
+    step = 0.05
+    for data_dataset,name in zip(data_datasets,names):
+        npVals = np.asarray(data_dataset)
+        name_gap = ' '*len(name)
+        ax_hist.annotate('{:s}:\n$\mu$ = {:3.3f}, $\sigma$ = {:3.3f}'.format(name,np.mean(npVals),np.std(npVals)),(hmax/6,ymin-(ymax-ymin)*(0.1+step)),fontsize=11,annotation_clip=False,xycoords='data')
+        step += 0.135
     
     #Add line for the MC 
-#    for mc_dataset,mc_errorset in zip(mc_datasets,mc_errorsets):
-    
     mc_dataset = mc_datasets[0]
     mc_errorset = mc_errorsets[0]
-
     if (len(mc_dataset) > 0):
         if evenX:
             if oldStyle:
@@ -409,8 +409,8 @@ def plot_stability( xData = None, xData_err=None,
 
         ax_plot.fill_between(xNP,mcNP-mcErrNP,mcNP+mcErrNP,alpha=0.5)
 
-#        if xVar == '':
-#            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mc_datasets[1],mc_errorsets[1]),(hmax/6,ymin-(ymax-ymin)*0.25),fontsize=11,annotation_clip=False,xycoords='data')
+        if xVar == '':
+            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mc_dataset[1],mc_errorset[1]),(hmax/6,ymin-(ymax-ymin)*(0.05+step)),fontsize=11,annotation_clip=False,xycoords='data')
         
     #Legend
     legend = ax_plot.legend(loc='lower left',numpoints=1,prop={'size':9})
@@ -421,7 +421,8 @@ def plot_stability( xData = None, xData_err=None,
     else:
         for i,name in enumerate(names):
             legend.get_texts()[i].set_text(name)
-    legend.get_frame().set_alpha(0.6)
+    legend.get_frame().set_alpha(0.5)
+    legend.get_frame().set_linewidth(0.0)
     ax_hist.grid(which='major', color='0.7' , linestyle='--',dashes=(5,1),zorder=0)
     ax_plot.grid(which='major', color='0.7' , linestyle='--',dashes=(5,1),zorder=0)
     ax_plot.grid(which='minor', color='0.85', linestyle='--',dashes=(5,1),zorder=0)
