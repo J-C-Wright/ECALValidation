@@ -39,6 +39,8 @@ def get_options():
                       dest='config',default='',
                       help='''
                       Config file containing runranges,tables,and names
+                      Structure:
+                      table path    runrange path   name    colour
                       ''')
     parser.add_option('--oldStyle',action='store_true',
                       dest='oldStyle',default=False,
