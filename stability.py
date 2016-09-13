@@ -171,7 +171,7 @@ if __name__ == '__main__':
                 #Switches on whether the datapoints are evenly distributed along x
                 evenXs = [False,True]
                 #Plot as function of date or run numbers
-                timevars = ['run_min']
+                timevars = ['run_min','time']
                 for timevar in timevars:
                     for evenX in evenXs:
                         pt.plot_stability( xData = dataFrames[0][timevar], data_datasets = data_datasets,

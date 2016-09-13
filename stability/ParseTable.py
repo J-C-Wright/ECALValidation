@@ -378,11 +378,13 @@ def plot_stability( xData = None, xData_err=None,
 
     #Annotate with mean and std dev
     step = 0.05
-    for data_dataset,name in zip(data_datasets,names):
+    for data_dataset,name,colour in zip(data_datasets,names,colours):
         npVals = np.asarray(data_dataset)
         name_gap = ' '*len(name)
-        ax_hist.annotate('{:s}:\n$\mu$ = {:3.3f}, $\sigma$ = {:3.3f}'.format(name,np.mean(npVals),np.std(npVals)),(hmax/6,ymin-(ymax-ymin)*(0.1+step)),fontsize=11,annotation_clip=False,xycoords='data')
-        step += 0.135
+        ax_hist.annotate('{:s}:\n$\mu$ = {:3.3f}, $\sigma$ = {:3.3f}'.format(name,np.mean(npVals),np.std(npVals)),
+                          (hmax*1.15,ymax-(ymax-ymin)*(0.1+step)),fontsize=11,annotation_clip=False,xycoords='data',
+                          color=colour)
+        step += 0.14
     
     #Add line for the MC 
     mc_dataset = mc_datasets[0]
@@ -392,12 +394,12 @@ def plot_stability( xData = None, xData_err=None,
             if oldStyle:
                 ax_plot.errorbar(xPlaceholder,mc_dataset,yerr=mc_errorset,capthick=0,marker='o',ms=4,ls='solid',c='Black')
             else:
-                ax_plot.errorbar(xPlaceholder,mc_dataset,yerr=mc_errorset,capthick=0,marker='',ms=4,ls='dashed',c='Black')
+                ax_plot.errorbar(xPlaceholder,mc_dataset,yerr=mc_errorset,capthick=0,marker='',ms=4,ls='dotted',c='Black')
         else:
             if oldStyle:
                 ax_plot.errorbar(xData,mc_dataset,yerr=mc_errorset,capthick=0,marker='o',ms=4,ls='solid',c='Black')
             else:
-                ax_plot.errorbar(xData,mc_dataset,yerr=mc_errorset,capthick=0,marker='',ms=4,ls='dashed',c='Black')
+                ax_plot.errorbar(xData,mc_dataset,yerr=mc_errorset,capthick=0,marker='',ms=4,ls='dotted',c='Black')
 
         if evenX:
             xNP = np.asarray(xPlaceholder)
@@ -410,7 +412,7 @@ def plot_stability( xData = None, xData_err=None,
         ax_plot.fill_between(xNP,mcNP-mcErrNP,mcNP+mcErrNP,alpha=0.5)
 
         if xVar == '':
-            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mc_dataset[1],mc_errorset[1]),(hmax/6,ymin-(ymax-ymin)*(0.05+step)),fontsize=11,annotation_clip=False,xycoords='data')
+            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mc_dataset[1],mc_errorset[1]),(hmax*1.15,ymax-(ymax-ymin)*(0.05+step)),fontsize=11,annotation_clip=False,xycoords='data')
         
     #Legend
     legend = ax_plot.legend(loc='lower left',numpoints=1,prop={'size':9})
