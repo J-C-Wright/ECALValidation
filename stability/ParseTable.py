@@ -10,6 +10,7 @@ import datetime
 import re
 import string
 from math import sqrt
+import matplotlib.cm as cm
 
 region_labels = {
     "EB"      : "EB",
@@ -244,7 +245,9 @@ def append_variables(path='',file='',data=None,category=''):
 
 def plot_stability( xData = None, data_datasets = None, mc_datasets = None, data_errorsets = None, 
                     mc_errorsets = None, label = '', category = '', path = "", evenX = False, 
-                    xVar = '',showMC = False,names = None):
+                    xVar = '',showMC = False,names = None,style='ggplot'):
+
+    plt.style.use(style)
 
     left, width = 0.1, 1.0
     bottom, height = 0.1, 0.5
@@ -264,9 +267,9 @@ def plot_stability( xData = None, data_datasets = None, mc_datasets = None, data
  
     for data_dataset,data_errorset in zip(data_datasets,data_errorsets):
         if evenX:
-            ax_plot.errorbar(xPlaceholder,data_dataset,yerr=data_errorset,capthick=0,marker='o',ms=4,ls='None',)
+            ax_plot.errorbar(xPlaceholder,data_dataset,yerr=data_errorset,capthick=0,marker='.',ms=4,ls='solid')
         else:
-            ax_plot.errorbar(xData,data_dataset,yerr=data_errorset,capthick=0,marker='o',ms=4,ls='None',)
+            ax_plot.errorbar(xData,data_dataset,yerr=data_errorset,capthick=0,marker='.',ms=4,ls='solid')
 
     # customise the axes
     xDataVar = xData.name
@@ -326,7 +329,7 @@ def plot_stability( xData = None, data_datasets = None, mc_datasets = None, data
 
     hmaxes = []
     for data_dataset in data_datasets:
-        y,_,_ = ax_hist.hist(data_dataset, bins=nbin, range = [ymin,ymax],orientation='horizontal', histtype='stepfilled', alpha=0.6)
+        y,_,_ = ax_hist.hist(data_dataset, bins=nbin,orientation='horizontal', histtype='stepfilled', alpha=0.5)
         hmaxes.append(y.max())
     hmax = max(hmaxes)
     ax_hist.set_xlim((0,hmax*1.1))
@@ -346,9 +349,9 @@ def plot_stability( xData = None, data_datasets = None, mc_datasets = None, data
 
     if (len(mc_dataset) > 0):
         if evenX:
-            ax_plot.errorbar(xPlaceholder,mc_dataset,yerr=mc_errorset,capthick=0,marker='o',ms=4,ls='None',c='Red')
+            ax_plot.errorbar(xPlaceholder,mc_dataset,yerr=mc_errorset,capthick=0,marker='.',ms=4,ls='solid')
         else:
-            ax_plot.errorbar(xData,mc_dataset,yerr=mc_errorset,capthick=0,marker='o',ms=4,ls='None',c='Red')
+            ax_plot.errorbar(xData,mc_dataset,yerr=mc_errorset,capthick=0,marker='.',ms=4,ls='solid')
 
         if evenX:
             xNP = np.asarray(xPlaceholder)
@@ -358,7 +361,7 @@ def plot_stability( xData = None, data_datasets = None, mc_datasets = None, data
         mcNP = np.asarray(mc_dataset.tolist())
         mcErrNP = np.asarray(mc_errorset.tolist())
 
-        ax_plot.fill_between(xNP,mcNP-mcErrNP,mcNP+mcErrNP,alpha=0.3,edgecolor='red', facecolor='red')
+#        ax_plot.fill_between(xNP,mcNP-mcErrNP,mcNP+mcErrNP,alpha=0.5)
 
 #        if xVar == '':
 #            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mc_datasets[1],mc_errorsets[1]),(hmax/6,ymin-(ymax-ymin)*0.25),fontsize=11,annotation_clip=False,xycoords='data')

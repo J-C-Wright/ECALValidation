@@ -56,7 +56,6 @@ if __name__ == '__main__':
     path = opt.config.split(config)[0]
     names,runRanges,tables = pt.get_tables_from_config(path = path,config = config)
 
-
     data_path = 'data-stability/' + opt.outputName + '/' + opt.invMass + '/' 
     plot_path = 'plot-stability/' + opt.outputName + '/' + opt.invMass + '/'
 
@@ -66,6 +65,7 @@ if __name__ == '__main__':
         os.makedirs(data_path)
 
 
+    #Get tables and runRanges from config + copy to data folder
     for table in tables:
         if table != data_path + table.split('/')[-1]:
             copyfile(table,data_path + table.split('/')[-1])
@@ -75,17 +75,19 @@ if __name__ == '__main__':
             if runRange != data_path + runRange.split('/')[-1]:
                 copyfile(runRange,data_path + runRange.split('/')[-1])
 
-
+    style = 'classic'
 
     #Reading regions from the table file
     regions = pt.read_regions_from_table(path=data_path,tableFile=tables[0].split('/')[-1],xVar=opt.xVar)
     print 'categories :: ', regions
+
 
     #Make plots
     print 'Starting plotmaking...'
     for region in regions:
         print 'Category: ',region
 
+        #Prepare dataframe for each config entry
         dataFrames = []
         for table,runRange in zip(tables,runRanges):
 
@@ -153,7 +155,7 @@ if __name__ == '__main__':
                                            data_errorsets = data_errorsets, mc_datasets = mc_datasets,
                                            mc_errorsets = mc_errorsets, label = pt.var_labels[var],
                                            category = region, path=plot_path, evenX = evenX,
-                                           xVar=opt.xVar,names=names)
+                                           xVar=opt.xVar,names=names,style=style)
             else:
                 xvars = [opt.xVar+'_min',opt.xVar+'_max',opt.xVar+'_mid']
                 for xvar in xvars:
@@ -162,7 +164,7 @@ if __name__ == '__main__':
                                        data_errorsets = data_errorsets, mc_datasets = mc_datasets,
                                        mc_errorsets = mc_errorsets, label = pt.var_labels[var],
                                        category = region, path=plot_path, evenX = False,
-                                       xVar=opt.xVar,names=names)
+                                       xVar=opt.xVar,names=names,style=style)
 
 
 
