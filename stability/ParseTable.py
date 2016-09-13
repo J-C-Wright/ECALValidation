@@ -10,6 +10,7 @@ import datetime
 import re
 import string
 from math import sqrt
+import matplotlib.cm as cm
 
 region_labels = {
     "EB"      : "EB",
@@ -95,6 +96,22 @@ def read_regions_from_regionsfile(path = "",regionsFile=""):
 
     return regions
 
+def get_tables_from_config(path = '',config = ''):
+
+    tables = []
+    runRanges = []
+    names = []
+    colours = []
+
+    with open(path+config) as f:
+        for line in f.read().split('\n'):
+            if line != '' and line[0] != '#':
+                tables.append(line.split()[0])
+                runRanges.append(line.split()[1])
+                names.append(line.split()[2])
+                colours.append(line.split()[3])
+
+    return [names,runRanges,tables,colours]
 
 def parse_table_over_regions(path = "", tableFile = "",category="",xVar=""):
 
@@ -241,7 +258,6 @@ def append_variables(path='',file='',data=None,category=''):
 
     return data_
 
-
 def draw_iov(ax, xData = None, iovs=[]):
     for v in iovs:
         for j in range(0, len(xData)-1):
@@ -250,10 +266,14 @@ def draw_iov(ax, xData = None, iovs=[]):
                 ax.axvline(x=xData[j], color='red')
 
 def plot_stability( xData = None, xData_err=None,
-                    datavalues = None, mcvalues = None,
-                    dataerrors = None, mcerrors = None,
+                    data_datasets = None, mc_datasets = None,
+                    data_errorsets = None, mc_errorsets = None,
                     label = '', category = '', path = "",
-                    evenX = False, xVar = '', iovs = None, var=None):
+                    evenX = False, xVar = '', iovs = None, 
+                    showMC = False,names = None,style='ggplot',
+                    oldStyle=False,colours=None):
+
+    plt.style.use(style)
 
     left, width    = 0.1, 1.0
     bottom, height = 0.1, 0.5
@@ -274,15 +294,19 @@ def plot_stability( xData = None, xData_err=None,
     ax_hist.yaxis.set_major_formatter(nullfmt)
 
     xPlaceholder = range(1,1+len(xData),1)
-    if evenX:
-        print "[yacine] just a place holder... "
-        ax_plot.errorbar(xPlaceholder,datavalues,
-                         yerr=dataerrors,xerr=xData_err,
-                         capthick=0,marker='.',ms=6,ls='None',zorder=10,)
-    else:
-        ax_plot.errorbar(xData,datavalues       ,
-                         yerr=dataerrors,xerr=xData_err,
-                         capthick=0,marker='.',ms=6,ls='None',zorder=10,)
+ 
+    for data_dataset,data_errorset,colour in zip(data_datasets,data_errorsets,colours):
+        if evenX:
+            if oldStyle:
+                ax_plot.errorbar(xPlaceholder,data_dataset,yerr=data_errorset,capthick=0,marker='o',ms=4,c=colour,ls='none')
+            else:
+                ax_plot.errorbar(xPlaceholder,data_dataset,yerr=data_errorset,capthick=0,marker='.',ms=4,ls='solid',c=colour)
+        else:
+            if oldStyle:
+                ax_plot.errorbar(xData,data_dataset,yerr=data_errorset,capthick=0,marker='o',ms=4,c=colour,ls='none')
+            else:
+                ax_plot.errorbar(xData,data_dataset,yerr=data_errorset,capthick=0,marker='.',ms=4,ls='solid',c=colour)
+
     # customise the axes
     xDataVar = xData.name
     if xDataVar == 'time':
@@ -291,7 +315,6 @@ def plot_stability( xData = None, xData_err=None,
         ax_plot.xaxis.set_major_locator(dates.MonthLocator())
         ax_plot.xaxis.set_major_formatter(dates.DateFormatter('\n\n\n%b\n%Y'))
     elif (xDataVar == 'run_max' or xDataVar == 'run_min') and not evenX:
-        print "[yacine] -- this is drawing with not evenX "
         majorLocator = MultipleLocator(125)
         minorLocator = MultipleLocator(62.5)
         ax_plot.xaxis.set_major_locator(majorLocator)
@@ -329,76 +352,80 @@ def plot_stability( xData = None, xData_err=None,
     ax_hist.xaxis.set_ticks([])
 
     #Get and set the limits for the histogram
-    if (len(mcvalues) > 0):
-        ymin = round(min(datavalues.min(),mcvalues.min())) - 1
-        ymax = round(max(datavalues.max(),mcvalues.max())) + 1
-    else:
-        ymin = round(datavalues.min()) - 1
-        ymax = round(datavalues.max()) + 1
+    for data_dataset,mc_dataset in zip(data_datasets,mc_datasets):
+        if (len(mc_dataset) > 0):
+            ymin = round(min(data_dataset.min(),mc_dataset.min())) - 1
+            ymax = round(max(data_dataset.max(),mc_dataset.max())) + 1
+        else:
+            ymin = round(data_dataset.min()) - 1
+            ymax = round(data_dataset.max()) + 1
 
     ax_plot.set_ylim((ymin,ymax))
     ax_hist.set_ylim((ymin,ymax))
 
     ax_plot.set_ylabel(label)
 
-    nbin = 20
-    y,_,_ = ax_hist.hist(datavalues, bins=nbin, orientation='horizontal', histtype='stepfilled', alpha=0.6,zorder=10,)
-    hmax = y.max()
+    nbin = 30
+
+    hmaxes = []
+    for data_dataset,colour in zip(data_datasets,colours):
+        y,_,_ = ax_hist.hist(data_dataset, bins=nbin,orientation='horizontal', histtype='stepfilled', alpha=0.5,color=colour)
+        hmaxes.append(y.max())
+    hmax = max(hmaxes)
     ax_hist.set_xlim((0,hmax*1.1))
 
     ax_plot.set_title(region_labels[category] + "    " + label)
 
     #Annotate with mean and std dev
-    npVals = np.asarray(datavalues)
-    ax_hist.annotate('Mean = {:3.3f}'.format(np.mean(npVals)),(hmax/6,ymin-(ymax-ymin)*0.1),fontsize=11,annotation_clip=False,xycoords='data')
-    ax_hist.annotate('Std dev. = {:3.3f}'.format(np.std(npVals)),(hmax/6,ymin-(ymax-ymin)*0.175),fontsize=11,annotation_clip=False,xycoords='data')
+#    npVals = np.asarray(data_datasets)
+#    ax_hist.annotate('Mean = {:3.3f}'.format(np.mean(npVals)),(hmax/6,ymin-(ymax-ymin)*0.1),fontsize=11,annotation_clip=False,xycoords='data')
+#    ax_hist.annotate('Std dev. = {:3.3f}'.format(np.std(npVals)),(hmax/6,ymin-(ymax-ymin)*0.175),fontsize=11,annotation_clip=False,xycoords='data')
+    
+    #Add line for the MC 
+#    for mc_dataset,mc_errorset in zip(mc_datasets,mc_errorsets):
+    
+    mc_dataset = mc_datasets[0]
+    mc_errorset = mc_errorsets[0]
 
-    #Add line for the MC
-    if (len(mcvalues) > 0):
+    if (len(mc_dataset) > 0):
         if evenX:
-            ax_plot.errorbar(xPlaceholder,mcvalues,xerr=xData_err,
-                             capthick=0, marker='.',ms=6,ls='None',c='Red',zorder=10)
-            if xData_err is not None :
-                ax_plot.bar(xPlaceholder,mcerrors,
-                            bottom=mcvalues-mcerrors/2,width=2*xData_err,
-                            color='r',alpha=0.3, zorder=8, align='center',edgecolor='red')
-                ax_plot.bar(xPlaceholder,mcerrors,
-                            bottom=mcvalues-mcerrors/2,width=2*xData_err, fill=False,
-                            color='r',alpha=1, zorder=8, align='center',edgecolor='red')
+            if oldStyle:
+                ax_plot.errorbar(xPlaceholder,mc_dataset,yerr=mc_errorset,capthick=0,marker='o',ms=4,ls='solid',c='Black')
+            else:
+                ax_plot.errorbar(xPlaceholder,mc_dataset,yerr=mc_errorset,capthick=0,marker='',ms=4,ls='dashed',c='Black')
         else:
-            ax_plot.errorbar(xData ,mcvalues,
-                             xerr=xData_err,capthick=0,
-                             marker='.',ms=6,ls='None',c='Red',zorder=10)
-            if xData_err is not None :
-                ax_plot.bar(xData,mcerrors,
-                            bottom=mcvalues-mcerrors/2,width=2*xData_err,
-                            color='r',alpha=0.3, zorder=8, align='center',edgecolor='red')
-                ax_plot.bar(xData,mcerrors,
-                            bottom=mcvalues-mcerrors/2,width=2*xData_err, fill=False,
-                            color='r',alpha=1, zorder=8, align='center',edgecolor='red')
+            if oldStyle:
+                ax_plot.errorbar(xData,mc_dataset,yerr=mc_errorset,capthick=0,marker='o',ms=4,ls='solid',c='Black')
+            else:
+                ax_plot.errorbar(xData,mc_dataset,yerr=mc_errorset,capthick=0,marker='',ms=4,ls='dashed',c='Black')
 
         if evenX:
             xNP = np.asarray(xPlaceholder)
         else:
             xNP = np.asarray(xData.tolist())
 
-        mcNP    = np.asarray(mcvalues.tolist())
-        mcErrNP = np.asarray(mcerrors.tolist())
+        mcNP    = np.asarray(mc_dataset.tolist())
+        mcErrNP = np.asarray(mc_errorset.tolist())
 
-        if xVar == '':
-            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mcvalues[1],mcerrors[1]),(hmax/6,ymin-(ymax-ymin)*0.25),fontsize=11,annotation_clip=False,xycoords='data')
+        ax_plot.fill_between(xNP,mcNP-mcErrNP,mcNP+mcErrNP,alpha=0.5)
 
+#        if xVar == '':
+#            ax_hist.annotate('MC = {:3.3f} $\pm$ {:3.3f}'.format(mc_datasets[1],mc_errorsets[1]),(hmax/6,ymin-(ymax-ymin)*0.25),fontsize=11,annotation_clip=False,xycoords='data')
+        
     #Legend
-    legend = ax_plot.legend(loc='upper right',numpoints=1)
-    if (len(mcvalues) > 0):
-        legend.get_texts()[0].set_text('Data')
-        legend.get_texts()[1].set_text('MC')
+    legend = ax_plot.legend(loc='lower left',numpoints=1,prop={'size':9})
+    if (len(mc_datasets[0]) > 0):
+        for i,name in enumerate(names):
+            legend.get_texts()[i].set_text(name)
+        legend.get_texts()[len(names)].set_text('MC')
     else:
-        legend.get_texts()[0].set_text('Data')
-
+        for i,name in enumerate(names):
+            legend.get_texts()[i].set_text(name)
+    legend.get_frame().set_alpha(0.6)
     ax_hist.grid(which='major', color='0.7' , linestyle='--',dashes=(5,1),zorder=0)
     ax_plot.grid(which='major', color='0.7' , linestyle='--',dashes=(5,1),zorder=0)
     ax_plot.grid(which='minor', color='0.85', linestyle='--',dashes=(5,1),zorder=0)
+    
     #Save
     if evenX:
         xDataVar = xDataVar + '_even'
@@ -410,7 +437,6 @@ def plot_stability( xData = None, xData_err=None,
     fileName = re.sub(r'[ ]','_',fileName)
 
     for fType in format_fig_output:
-
         print 'Saving plot: ' + path + xDataVar + '/' + fileName + '.' + fType
         plt.savefig( path + xDataVar + '/' + fileName+'.'+fType,
                      format=fType,orientation='landscape',
