@@ -352,13 +352,19 @@ def plot_stability( xData = None, xData_err=None,
     ax_hist.xaxis.set_ticks([])
 
     #Get and set the limits for the histogram
+    ymin = 9999
+    ymax = -9999
     for data_dataset,mc_dataset in zip(data_datasets,mc_datasets):
         if (len(mc_dataset) > 0):
-            ymin = round(min(data_dataset.min(),mc_dataset.min())) - 1
-            ymax = round(max(data_dataset.max(),mc_dataset.max())) + 1
+            ymintemp = round(min(data_dataset.min(),mc_dataset.min())) - 1
+            ymaxtemp = round(max(data_dataset.max(),mc_dataset.max())) + 1
+            if ymintemp < ymin: ymin = ymintemp
+            if ymaxtemp > ymax: ymax = ymaxtemp
         else:
-            ymin = round(data_dataset.min()) - 1
-            ymax = round(data_dataset.max()) + 1
+            ymintemp = round(data_dataset.min()) - 1
+            ymaxtemp = round(data_dataset.max()) + 1
+            if ymintemp < ymin: ymin = ymintemp
+            if ymaxtemp > ymax: ymax = ymaxtemp
 
     ax_plot.set_ylim((ymin,ymax))
     ax_hist.set_ylim((ymin,ymax))
